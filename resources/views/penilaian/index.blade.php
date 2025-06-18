@@ -1,53 +1,35 @@
 @extends('layouts.app')
 
+@section('title', 'Penilaian Alternatif')
+
+@section('header-actions')
+    <div>
+        <button type="button" id="btnReset" class="btn btn-outline-secondary btn-sm me-2">
+            <i class="fas fa-undo me-1"></i> Reset
+        </button>
+        <button type="button" id="btnSimpan" class="btn btn-primary btn-sm">
+            <i class="fas fa-save me-1"></i> Simpan Perubahan
+        </button>
+    </div>
+@endsection
+
 @section('content')
     <!-- Alert Container -->
     <div id="alertContainer"></div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">Penilaian Alternatif</h3>
-        <div>
-            <button type="button" id="btnReset" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-undo me-1"></i> Reset
-            </button>
-            <button type="button" id="btnSimpan" class="btn btn-primary">
-                <i class="fas fa-save me-1"></i> Simpan Perubahan
-            </button>
-        </div>
-    </div>
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <ul class="mb-0">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    <div class="card border-0 shadow-sm">
+    <div class="card shadow-sm border-0">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+            <div class="table-responsive" style="overflow-x: auto; max-width: 100%;">
+                <table class="table table-hover align-middle mb-0" style="min-width: 1200px;">
+                    <thead>
                         <tr>
-                            <th style="width: 200px;">Alternatif</th>
+                            <th style="width: 250px; min-width: 250px;">Alternatif</th>
                             @foreach($kriterias as $kriteria)
                                 <th class="text-center">
-                                    {{ $kriteria->kode_kriteria }}
-                                    <br>
-                                    <small class="text-muted">{{ $kriteria->nama_kriteria }}</small>
-                                    <br>
-                                    <small class="badge bg-{{ $kriteria->sifat == 'benefit' ? 'success' : 'danger' }}">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="fw-bold">{{ $kriteria->kode_kriteria }}</span>
+                                        <small class="text-muted text-center">{{ $kriteria->nama_kriteria }}</small>
+                                        <span class="badge bg-{{ $kriteria->sifat == 'benefit' ? 'success' : 'danger' }} mt-1">
                                         {{ ucfirst($kriteria->sifat) }}
                                     </small>
                                 </th>
@@ -86,6 +68,82 @@
 
 @push('styles')
 <style>
+    /* Style untuk alert container */
+    #alertContainer {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 1100;
+        max-width: 400px;
+    }
+    
+    /* Style untuk tabel */
+    .table th, .table td {
+        vertical-align: middle;
+        padding: 1rem;
+        white-space: nowrap;
+    }
+    
+    .table td:first-child {
+        position: sticky;
+        left: 0;
+        background-color: #fff;
+        z-index: 1;
+    }
+    
+    .table th:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+    }
+    
+    .table thead th {
+        background-color: #f8f9fc;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e3e6f0;
+    }
+    
+    .badge {
+        font-size: 0.7em;
+        font-weight: 600;
+        padding: 0.3em 0.6em;
+        border-radius: 0.25rem;
+    }
+    
+    .card {
+        border: 1px solid #e3e6f0;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        transition: all 0.2s;
+    }
+    
+    .card:hover {
+        box-shadow: 0 0.5rem 1.5rem 0.5rem rgba(58, 59, 69, 0.15);
+    }
+    
+    /* Style untuk input number */
+    input[type="number"] {
+        text-align: center;
+        min-width: 80px;
+        -moz-appearance: textfield;
+    }
+    
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    /* Style untuk tombol aksi */
+    .btn-sm {
+        padding: 0.3rem 0.65rem;
+        font-size: 0.8rem;
+        border-radius: 0.35rem;
+    }
+    
     /* Style untuk alert container */
     #alertContainer {
         position: fixed;
@@ -136,6 +194,7 @@
 @push('scripts')
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
     // Inisialisasi variabel
@@ -221,14 +280,27 @@ $(document).ready(function() {
     // Muat data dari session storage jika ada
     loadFromSession();
     
-    // Tombol reset
+    // Handle tombol reset
     $('#btnReset').on('click', function() {
-        if (confirm('Yakin ingin mereset semua perubahan yang belum disimpan?')) {
-            sessionStorage.clear();
-            location.reload();
-        }
+        Swal.fire({
+            title: 'Konfirmasi Reset',
+            text: 'Apakah Anda yakin ingin mereset semua perubahan?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Reset!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('input[type="number"]').val('');
+                changedInputs.clear();
+                updateSaveButton();
+                showAlert('Semua perubahan telah direset', 'success');
+            }
+        });
     });
-    
+
     // Tangkap klik tombol simpan
     $('#btnSimpan').on('click', function() {
         saveChanges();
@@ -297,9 +369,9 @@ $(document).ready(function() {
                     changedInputs.clear();
                     
                     // Tampilkan notifikasi sukses
-                    showAlert('success', `Berhasil menyimpan ${response.saved_count || 0} data`);
+                    showAlert('Berhasil menyimpan ' + response.saved_count + ' data', 'success');
                 } else {
-                    showAlert('danger', response.message || 'Gagal menyimpan data');
+                    showAlert(response.message || 'Gagal menyimpan data', 'danger');
                 }
             },
             error: function(xhr) {
@@ -308,7 +380,7 @@ $(document).ready(function() {
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage = xhr.responseJSON.message;
                 }
-                showAlert('danger', errorMessage);
+                showAlert(errorMessage, 'danger');
             },
             complete: function() {
                 isSaving = false;
@@ -318,25 +390,24 @@ $(document).ready(function() {
         });
     }
 
-    // Fungsi untuk menampilkan notifikasi
-    function showAlert(type, message) {
-        const alertId = 'alert-' + Date.now();
-        const alert = `
-            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>`;
+    // Fungsi untuk menampilkan alert
+    function showAlert(message, type = 'success') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
         
-        // Hapus alert yang ada terlebih dahulu
-        $('.alert').alert('close');
-        
-        // Tambahkan alert baru ke container
-        $('#alertContainer').html(alert);
-        
-        // Auto-hide alert setelah 5 detik
-        setTimeout(() => {
-            $(`#${alertId}`).alert('close');
-        }, 5000);
+        Toast.fire({
+            icon: type,
+            title: message
+        });
     }
 });
 </script>

@@ -1,53 +1,39 @@
 @extends('layouts.app')
 
+@section('title', 'Data Kriteria')
+
+@section('header-actions')
+    <button class="btn btn-primary btn-sm" id="btnTambahKriteria" data-total-bobot="{{ $totalBobot }}">
+        <i class="fas fa-plus me-1"></i> Tambah Kriteria
+    </button>
+    
+    @push('scripts')
+    <script>
+        document.getElementById('btnTambahKriteria').addEventListener('click', function(e) {
+            const totalBobot = parseFloat(this.getAttribute('data-total-bobot'));
+            if (totalBobot >= 1) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan',
+                    text: 'Total bobot sudah mencapai 1. Silakan edit bobot kriteria yang ada terlebih dahulu.',
+                    confirmButtonColor: '#4e73df',
+                });
+                return false;
+            } else {
+                const modal = new bootstrap.Modal(document.getElementById('modalTambah'));
+                modal.show();
+            }
+        });
+    </script>
+    @endpush
+@endsection
+
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">Data Kriteria</h3>
-        <button class="btn btn-primary" id="btnTambahKriteria" data-total-bobot="{{ $totalBobot }}">
-            <i class="fas fa-plus me-1"></i> Tambah Kriteria
-        </button>
-        
-        @push('scripts')
-        <script>
-            document.getElementById('btnTambahKriteria').addEventListener('click', function(e) {
-                const totalBobot = parseFloat(this.getAttribute('data-total-bobot'));
-                if (totalBobot >= 1) {
-                    e.preventDefault();
-                    alert('Total bobot sudah mencapai 1. Silakan edit bobot kriteria yang ada terlebih dahulu.');
-                    return false;
-                } else {
-                    // If total weight is less than 1, show the modal
-                    const modal = new bootstrap.Modal(document.getElementById('modalTambah'));
-                    modal.show();
-                }
-            });
-        </script>
-        @endpush
-    </div>
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            <ul class="mb-0">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    <div class="card shadow-sm">
+    <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th class="text-center" width="15%">Kode</th>
@@ -69,16 +55,18 @@
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <button class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#modalEdit{{ $k->id }}">
-                                        <i class="fas fa-edit me-1"></i> Edit
-                                    </button>
-                                    <form action="{{ route('kriteria.destroy', $k->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kriteria ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash me-1"></i> Hapus
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEdit{{ $k->id }}" title="Edit">
+                                            <i class="fas fa-edit"></i>
                                         </button>
-                                    </form>
+                                        <form action="{{ route('kriteria.destroy', $k->id) }}" method="POST" onsubmit="event.preventDefault(); deleteItem(this, 'Apakah Anda yakin ingin menghapus kriteria ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -200,13 +188,84 @@
     @endforeach
 
     @push('styles')
+    @push('scripts')
+    <script>
+        function deleteItem(form, message) {
+            Swal.fire({
+                title: 'Konfirmasi',
+                text: message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
+    </script>
+    @endpush
+    
     <style>
         .table th, .table td {
             vertical-align: middle;
+            padding: 1rem;
+        }
+        
+        .btn-sm {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .table thead th {
+            background-color: #f8f9fc;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e3e6f0;
         }
         .badge {
-            font-size: 0.85em;
-            padding: 0.4em 0.75em;
+            font-size: 0.75em;
+            font-weight: 600;
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+        }
+        .btn-sm {
+            padding: 0.3rem 0.65rem;
+            font-size: 0.8rem;
+            border-radius: 0.35rem;
+        }
+        .card {
+            border: 1px solid #e3e6f0;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+            transition: all 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 0.5rem 1.5rem 0.5rem rgba(58, 59, 69, 0.15);
+        }
+        .modal-content {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.5rem 1.5rem 0.5rem rgba(0, 0, 0, 0.15);
+        }
+        .modal-header {
+            border-bottom: 1px solid #e3e6f0;
+            padding: 1.25rem 1.5rem;
+        }
+        .modal-body {
+            padding: 1.5rem;
+        }
+        .modal-footer {
+            border-top: 1px solid #e3e6f0;
+            padding: 1rem 1.5rem;
         }
     </style>
     @endpush
