@@ -7,6 +7,7 @@ use App\Http\Controllers\PenilaianController;
 use App\Http\Controllers\SAWController;
 use App\Http\Controllers\WPController;
 use App\Http\Controllers\TOPSISController;
+use App\Http\Controllers\PerbandinganController;
 
 // Route Home
 Route::get('/', function () {
@@ -44,3 +45,6 @@ Route::get('/wp', [WPController::class, 'index'])->name('wp.index');
 
 // Route TOPSIS
 Route::get('/topsis', [TOPSISController::class, 'index'])->name('topsis.index');
+
+// Route Perbandingan
+Route::get('/perbandingan', [PerbandinganController::class, 'index'])->name('perbandingan.index');
