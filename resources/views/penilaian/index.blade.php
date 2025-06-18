@@ -220,24 +220,25 @@ $(document).ready(function() {
         const originalValue = input.attr('data-original-value') || '';
         
         // Simpan ke session storage
-        sessionStorage.setItem(`penilaian_${inputId}`, value);
+        if (value !== originalValue) {
+            sessionStorage.setItem(`penilaian_${inputId}`, value);
+        } else {
+            sessionStorage.removeItem(`penilaian_${inputId}`);
+        }
         
         // Tandai sebagai berubah
         if (value !== originalValue) {
             changedInputs.add(inputId);
             input.addClass('is-changed');
-            // Tambahkan style langsung ke elemen
             input.css({
                 'background-color': '#fff3cd',
                 'border': '2px solid #ffc107',
                 'font-weight': '500',
                 'color': '#000'
             });
-            console.log('Menandai input berubah:', inputId);
         } else {
             changedInputs.delete(inputId);
             input.removeClass('is-changed');
-            // Hapus style inline
             input.css({
                 'background-color': '',
                 'border': '',
@@ -248,28 +249,147 @@ $(document).ready(function() {
         
         updateSaveButton();
     }
-
-    // Fungsi untuk memuat nilai dari session storage
-    function loadFromSession() {
+    
+    // Fungsi untuk mereset nilai ke nilai asli
+    function resetToOriginalValues() {
         $('.nilai-input').each(function() {
             const input = $(this);
-            const inputId = `${input.data('alternatif-id')}-${input.data('kriteria-id')}`;
-            const savedValue = sessionStorage.getItem(`penilaian_${inputId}`);
+            const originalValue = input.attr('data-original-value') || '';
+            input.val(originalValue);
             
-            if (savedValue !== null) {
-                input.val(savedValue);
-                changedInputs.add(inputId);
-                input.addClass('is-changed');
-            }
+            // Hapus dari daftar perubahan
+            const inputId = `${input.data('alternatif-id')}-${input.data('kriteria-id')}`;
+            changedInputs.delete(inputId);
+            
+            // Reset tampilan
+            input.removeClass('is-changed');
+            input.css({
+                'background-color': '',
+                'border': '',
+                'font-weight': '',
+                'color': ''
+            });
+            
+            // Hapus dari session storage
+            sessionStorage.removeItem(`penilaian_${inputId}`);
         });
         
         updateSaveButton();
+        return true;
     }
     
-    // Inisialisasi data original value
+    // Fungsi untuk mengirim data ke server
+    function saveChanges() {
+        if (isSaving || changedInputs.size === 0) return;
+        
+        const $btn = $('#btnSimpan');
+        const updates = [];
+        
+        // Kumpulkan semua perubahan dari input yang diubah
+        $('.nilai-input.is-changed').each(function() {
+            const input = $(this);
+            const alternatifId = input.data('alternatif-id');
+            const kriteriaId = input.data('kriteria-id');
+            const nilai = input.val().trim() === '' ? null : parseFloat(input.val().trim());
+            
+            updates.push({
+                alternatif_id: alternatifId,
+                kriteria_id: kriteriaId,
+                nilai: nilai
+            });
+        });
+        
+        // Tandai sedang menyimpan
+        isSaving = true;
+        $btn.prop('disabled', true);
+        $btn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Menyimpan...');
+        
+        // Kirim ke server
+        $.ajax({
+            url: '{{ route("penilaian.store") }}',
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                updates: updates
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update nilai asli untuk input yang berhasil disimpan
+                    updates.forEach(update => {
+                        const input = $(`.nilai-input[data-alternatif-id="${update.alternatif_id}"][data-kriteria-id="${update.kriteria_id}"]`);
+                        input.attr('data-original-value', update.nilai !== null ? update.nilai : '');
+                        
+                        // Hapus dari daftar perubahan
+                        const inputId = `${update.alternatif_id}-${update.kriteria_id}`;
+                        changedInputs.delete(inputId);
+                        
+                        // Reset tampilan
+                        input.removeClass('is-changed');
+                        input.css({
+                            'background-color': '',
+                            'border': '',
+                            'font-weight': '',
+                            'color': ''
+                        });
+                        
+                        // Hapus dari session storage
+                        sessionStorage.removeItem(`penilaian_${inputId}`);
+                    });
+                    
+                    showAlert('Data berhasil disimpan', 'success');
+                } else {
+                    showAlert('Gagal menyimpan: ' + (response.message || 'Terjadi kesalahan'), 'error');
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Terjadi kesalahan saat menyimpan data';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showAlert(errorMessage, 'error');
+            },
+            complete: function() {
+                isSaving = false;
+                $btn.html('<i class="fas fa-save me-1"></i> Simpan Perubahan');
+                updateSaveButton();
+            }
+        });
+    }
+    
+    // Fungsi untuk menampilkan notifikasi
+    function showAlert(message, type = 'success') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+        
+        Toast.fire({
+            icon: type,
+            title: message
+        });
+    }
+    
+    // Inisialisasi data original value dan event listener
     $('.nilai-input').each(function() {
         const input = $(this);
-        input.attr('data-original-value', input.val() || '');
+        // Simpan nilai asli dari database
+        const originalValue = input.val() === '' ? '' : input.val();
+        input.attr('data-original-value', originalValue);
+        
+        // Set nilai dari session storage jika ada
+        const inputId = `${input.data('alternatif-id')}-${input.data('kriteria-id')}`;
+        const savedValue = sessionStorage.getItem(`penilaian_${inputId}`);
+        
+        if (savedValue !== null) {
+            input.val(savedValue);
+        }
         
         // Tambahkan event listener untuk input
         input.on('input', function() {
@@ -277,8 +397,8 @@ $(document).ready(function() {
         });
     });
     
-    // Muat data dari session storage jika ada
-    loadFromSession();
+    // Update tombol simpan setelah inisialisasi
+    updateSaveButton();
     
     // Handle tombol reset
     $('#btnReset').on('click', function() {
@@ -290,125 +410,28 @@ $(document).ready(function() {
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
             confirmButtonText: 'Ya, Reset!',
-            cancelButtonText: 'Batal'
+            cancelButtonText: 'Batal',
+            allowOutsideClick: false,
+            allowEscapeKey: false
         }).then((result) => {
             if (result.isConfirmed) {
-                $('input[type="number"]').val('');
-                changedInputs.clear();
-                updateSaveButton();
-                showAlert('Semua perubahan telah direset', 'success');
+                resetToOriginalValues();
+                showAlert('Semua perubahan telah direset ke nilai asli', 'success');
             }
         });
     });
-
-    // Tangkap klik tombol simpan
+    
+    // Handle tombol simpan
     $('#btnSimpan').on('click', function() {
         saveChanges();
     });
-
-    // Fungsi untuk mengirim data ke server
-    function saveChanges() {
-        if (isSaving || changedInputs.size === 0) return;
-        
-        const $btn = $('#btnSimpan');
-        const updates = [];
-        
-        // Kumpulkan semua perubahan dari session storage
-        changedInputs.forEach(inputId => {
-            const [alternatifId, kriteriaId] = inputId.split('-');
-            const value = sessionStorage.getItem(`penilaian_${inputId}`);
-            
-            updates.push({
-                alternatif_id: parseInt(alternatifId),
-                kriteria_id: parseInt(kriteriaId),
-                nilai: value === '' ? null : parseFloat(value)
-            });
-        });
-        
-        // Sembunyikan data sensitif dari console log
-        const logUpdates = updates.map(update => ({
-            alternatif_id: '***',
-            kriteria_id: '***',
-            nilai: update.nilai
-        }));
-        console.log('Mengirim data ke server:', logUpdates);
-        isSaving = true;
-        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...');
-
-        // Kirim data ke server
-        $.ajax({
-            url: '{{ route("penilaian.store") }}',
-            type: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                updates: updates
-            },
-            success: function(response) {
-                // Sembunyikan data sensitif dari console log
-                const logResponse = response.success 
-                    ? { success: true, saved_count: response.saved_count }
-                    : { success: false, message: response.message };
-                console.log('Response:', logResponse);
-                if (response.success) {
-                    // Perbarui nilai original dan reset style
-                    $('.nilai-input.is-changed').each(function() {
-                        const input = $(this);
-                        input.attr('data-original-value', input.val() || '');
-                        input.removeClass('is-changed');
-                        // Reset style inline
-                        input.css({
-                            'background-color': '',
-                            'border': '',
-                            'font-weight': '',
-                            'color': ''
-                        });
-                    });
-                    
-                    // Hapus data dari session storage
-                    sessionStorage.clear();
-                    changedInputs.clear();
-                    
-                    // Tampilkan notifikasi sukses
-                    showAlert('Berhasil menyimpan ' + response.saved_count + ' data', 'success');
-                } else {
-                    showAlert(response.message || 'Gagal menyimpan data', 'danger');
-                }
-            },
-            error: function(xhr) {
-                console.error('Error:', xhr);
-                let errorMessage = 'Terjadi kesalahan saat menyimpan data';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                showAlert(errorMessage, 'danger');
-            },
-            complete: function() {
-                isSaving = false;
-                $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Simpan Perubahan');
-                updateSaveButton();
-            }
-        });
-    }
-
-    // Fungsi untuk menampilkan alert
-    function showAlert(message, type = 'success') {
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 5000,
-            timerProgressBar: true,
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer)
-                toast.addEventListener('mouseleave', Swal.resumeTimer)
-            }
-        });
-        
-        Toast.fire({
-            icon: type,
-            title: message
-        });
-    }
+    
+    // Handle tombol refresh halaman
+    $(window).on('beforeunload', function() {
+        if (changedInputs.size > 0) {
+            return 'Ada perubahan yang belum disimpan. Yakin ingin meninggalkan halaman ini?';
+        }
+    });
 });
 </script>
 @endpush

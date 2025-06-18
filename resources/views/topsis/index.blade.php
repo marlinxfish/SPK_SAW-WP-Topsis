@@ -184,12 +184,91 @@
             </div>
         </div>
 
+        <!-- Tabel Detail Perhitungan Jarak dan Vi -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">6. Detail Perhitungan Jarak dan Nilai Preferensi (Vi)</h5>
+            </div>
+            <div class="card-body p-0">
+                @foreach($alternatifs as $alt)
+                    <div class="mb-4">
+                        <h6 class="px-3 pt-3 mb-0 fw-bold">{{ $alt->kode_alternatif }} - {{ $alt->nama_alternatif }}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Kriteria</th>
+                                        <th class="text-center">Yij</th>
+                                        <th class="text-center">A+</th>
+                                        <th class="text-center">A-</th>
+                                        <th class="text-center">(Yij - A+)²</th>
+                                        <th class="text-center">(Yij - A-)²</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $totalPositif = 0;
+                                        $totalNegatif = 0;
+                                    @endphp
+                                    @foreach($kriterias as $krit)
+                                        @php
+                                            $yij = $matriksTerbobot[$alt->id][$krit->id];
+                                            $aPos = $solusiIdealPositif[$krit->id];
+                                            $aNeg = $solusiIdealNegatif[$krit->id];
+                                            
+                                            $diffPos = pow($yij - $aPos, 2);
+                                            $diffNeg = pow($yij - $aNeg, 2);
+                                            
+                                            $totalPositif += $diffPos;
+                                            $totalNegatif += $diffNeg;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $krit->kode_kriteria }} ({{ $krit->sifat }})</td>
+                                            <td class="text-center">{{ number_format($yij, 6) }}</td>
+                                            <td class="text-center">{{ number_format($aPos, 6) }}</td>
+                                            <td class="text-center">{{ number_format($aNeg, 6) }}</td>
+                                            <td class="text-center">{{ number_format($diffPos, 6) }}</td>
+                                            <td class="text-center">{{ number_format($diffNeg, 6) }}</td>
+                                        </tr>
+                                    @endforeach
+                                    <tr class="table-secondary fw-bold">
+                                        <td colspan="3" class="text-end">Total:</td>
+                                        <td class="text-center">Σ =</td>
+                                        <td class="text-center">{{ number_format($totalPositif, 6) }}</td>
+                                        <td class="text-center">{{ number_format($totalNegatif, 6) }}</td>
+                                    </tr>
+                                    <tr class="table-light fw-bold">
+                                        <td colspan="3" class="text-end">Akar Kuadrat (D+ dan D-):</td>
+                                        <td class="text-center">√</td>
+                                        <td class="text-center">{{ number_format(sqrt($totalPositif), 6) }}</td>
+                                        <td class="text-center">{{ number_format(sqrt($totalNegatif), 6) }}</td>
+                                    </tr>
+                                    <tr class="table-primary fw-bold">
+                                        <td colspan="3" class="text-end">Nilai Preferensi (Vi):</td>
+                                        <td colspan="3" class="text-center">
+                                            Vi = D- / (D+ + D-) = 
+                                            {{ number_format(sqrt($totalNegatif), 6) }} / 
+                                            ({{ number_format(sqrt($totalPositif), 6) }} + {{ number_format(sqrt($totalNegatif), 6) }}) = 
+                                            <span class="text-success">{{ number_format($jarakNegatif[$alt->id] / ($jarakPositif[$alt->id] + $jarakNegatif[$alt->id]), 6) }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @if(!$loop->last)
+                        <hr class="my-0">
+                    @endif
+                @endforeach
+            </div>
+        </div>
+
         <!-- Jarak ke Solusi Ideal -->
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="card h-100">
                     <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0">6. Jarak ke Solusi Ideal Positif (D+)</h5>
+                        <h5 class="mb-0">7. Jarak ke Solusi Ideal Positif (D+)</h5>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -245,7 +324,7 @@
         <!-- Hasil Akhir -->
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">8. Hasil Perangkingan</h5>
+                <h5 class="mb-0">8. Hasil Perangkingan (Berdasarkan Nilai Vi)</h5>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">

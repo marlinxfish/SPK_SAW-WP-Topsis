@@ -19,10 +19,7 @@ class KriteriaController extends Controller
     public function store(Request $request)
     {
         $totalBobot = Kriteria::sum('bobot');
-        if ($totalBobot >= 1) {
-            return redirect()->back()->with('error', 'Tidak dapat menambahkan kriteria baru karena total bobot sudah mencapai 1. Silakan edit bobot kriteria yang ada.');
-        }
-
+        
         $validated = $request->validate([
             'kode_kriteria' => 'required|unique:kriterias,kode_kriteria|regex:/^C\d+$/',
             'nama_kriteria' => 'required|string|max:255',
@@ -30,9 +27,14 @@ class KriteriaController extends Controller
                 'required',
                 'numeric',
                 'min:0.01',
+                'max:1',
                 function ($attribute, $value, $fail) use ($totalBobot) {
-                    if (($totalBobot + $value) > 1) {
-                        $fail('Total bobot tidak boleh melebihi 1. Sisa bobot yang tersedia: ' . number_format(1 - $totalBobot, 2));
+                    $newTotal = $totalBobot + $value;
+                    if (bccomp($newTotal, 1, 2) > 0) {
+                        $sisaBobot = 1 - $totalBobot;
+                        $fail("Total bobot akan menjadi " . number_format($newTotal, 2) . 
+                              ". Melebihi batas maksimum 1. Sisa bobot yang tersedia: " . 
+                              number_format($sisaBobot, 2));
                     }
                 },
             ],
@@ -41,6 +43,7 @@ class KriteriaController extends Controller
             'kode_kriteria.regex' => 'Format kode tidak valid. Harus dalam format C1, C2, dst.',
             'bobot.min' => 'Bobot minimal 0.01',
             'bobot.max' => 'Bobot maksimal 1',
+            'bobot.numeric' => 'Bobot harus berupa angka',
         ]);
 
         Kriteria::create($validated);
@@ -60,8 +63,13 @@ class KriteriaController extends Controller
                 'min:0.01',
                 'max:1',
                 function ($attribute, $value, $fail) use ($totalBobot) {
-                    if (($totalBobot + $value) > 1) {
-                        $fail('Total bobot tidak boleh melebihi 1. Sisa bobot yang tersedia: ' . number_format(1 - $totalBobot, 2));
+                    $newTotal = $totalBobot + $value;
+                    // Gunakan bccomp untuk membandingkan angka desimal dengan presisi 2 digit
+                    if (bccomp($newTotal, 1, 2) > 0) {
+                        $sisaBobot = 1 - $totalBobot;
+                        $fail("Total bobot akan menjadi " . number_format($newTotal, 2) . 
+                              ". Melebihi batas maksimum 1. Sisa bobot yang tersedia: " . 
+                              number_format($sisaBobot, 2));
                     }
                 },
             ],

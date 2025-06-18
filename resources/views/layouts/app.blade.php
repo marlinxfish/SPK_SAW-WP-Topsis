@@ -559,9 +559,13 @@
     </div>        <!-- Footer -->
             <footer class="footer mt-auto py-3 bg-white border-top">
                 <div class="container-fluid text-center">
-                    <span class="text-muted">
+                    <span class="text-muted ms-5">
                          {{ date('Y') }} Sistem Pendukung Keputusan - All Rights Reserved
                     </span>
+                    <br>
+                    <span class="text-muted ms-5">
+                        Created with <i class="fas fa-heart text-danger"></i> by Kelompok 3
+                    </span> 
                 </div>
             </footer>
         </div>
@@ -630,5 +634,69 @@
     @vite(['resources/js/app.js'])
     
     @stack('scripts')
+    
+    <script>
+    $(document).ready(function() {
+        // Daftar route yang perlu dicek kelengkapan datanya
+        const protectedRoutes = [
+            'saw.index',
+            'wp.index',
+            'topsis.index',
+            'perbandingan.index'
+        ];
+
+        // Fungsi untuk memeriksa kelengkapan data
+        function checkDataCompleteness(route, event) {
+            // Skip jika bukan route yang dilindungi
+            if (!protectedRoutes.includes(route)) {
+                return true;
+            }
+
+            // Lakukan AJAX untuk memeriksa kelengkapan data
+            $.ajax({
+                url: '{{ route("penilaian.check-completeness") }}',
+                type: 'GET',
+                success: function(response) {
+                    if (!response.complete) {
+                        // Tampilkan SweetAlert jika data belum lengkap
+                        event.preventDefault();
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Data Belum Lengkap',
+                            html: 'Silakan lengkapi penilaian terlebih dahulu sebelum melihat hasil perhitungan.',
+                            confirmButtonText: 'Ke Halaman Penilaian',
+                            showCancelButton: true,
+                            cancelButtonText: 'Batal',
+                            confirmButtonColor: '#4e73df',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = '{{ route("penilaian.index") }}';
+                            }
+                        });
+                    }
+                },
+                error: function() {
+                    showErrorAlert('Gagal memeriksa kelengkapan data');
+                }
+            });
+        }
+
+        // Tambahkan event listener untuk link menu
+        $('a[href^="/"]').on('click', function(e) {
+            const href = $(this).attr('href');
+            const routeName = $(this).data('route');
+            
+            if (routeName) {
+                checkDataCompleteness(routeName, e);
+            }
+        });
+
+        // Tambahkan data-route ke semua link menu yang relevan
+        $('a[href^="{{ url("/saw") }}"]').attr('data-route', 'saw.index');
+        $('a[href^="{{ url("/wp") }}"]').attr('data-route', 'wp.index');
+        $('a[href^="{{ url("/topsis") }}"]').attr('data-route', 'topsis.index');
+        $('a[href^="{{ url("/perbandingan") }}"]').attr('data-route', 'perbandingan.index');
+    });
+    </script>
 </body>
 </html>

@@ -84,16 +84,12 @@
             <div class="row align-items-center">
                 <div class="col-md-6">
                     <strong>Total Bobot:</strong>
-                    <span class="ms-2 badge bg-{{ $totalBobot == 1 ? 'success' : ($totalBobot > 1 ? 'danger' : 'primary') }}">
+                    <span class="ms-2 badge bg-{{ $totalBobot >= 1 ? 'success' : 'primary' }}">
                         {{ number_format($totalBobot, 2) }} / 1.00
                     </span>
                 </div>
                 <div class="col-md-6 text-end">
-                    @if($totalBobot >= 1)
-                        <span class="text-danger">
-                            <i class="fas fa-info-circle"></i> Total bobot sudah mencapai 1. Silakan edit bobot kriteria yang ada.
-                        </span>
-                    @endif
+                    {{-- Notifikasi total bobot dihapus sesuai permintaan --}}
                 </div>
             </div>
         </div>

@@ -102,6 +102,60 @@
         </div>
     </div>
 
+    <!-- Matriks Tertimbang (V) -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Matriks Tertimbang (V = R × W)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th rowspan="2">Alternatif</th>
+                            <th colspan="{{ count($kriterias) }}" class="text-center">Nilai Ternormalisasi × Bobot</th>
+                            <th rowspan="2" class="text-center bg-light">Total (Vi)</th>
+                        </tr>
+                        <tr>
+                            @foreach($kriterias as $kriteria)
+                                <th class="text-center small">
+                                    {{ $kriteria->kode_kriteria }}
+                                    <br>
+                                    <span class="badge bg-{{ $kriteria->sifat == 'benefit' ? 'success' : 'danger' }}">
+                                        {{ $kriteria->bobot }}
+                                    </span>
+                                </th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($alternatifs as $alt)
+                            <tr>
+                                <td class="fw-bold">{{ $alt->kode_alternatif }}</td>
+                                @php
+                                    $totalVi = 0;
+                                @endphp
+                                @foreach($kriterias as $krit)
+                                    @php
+                                        $weightedValue = ($normal[$alt->id][$krit->id] ?? 0) * $krit->bobot;
+                                        $totalVi += $weightedValue;
+                                    @endphp
+                                    <td class="text-center small">
+                                        {{ number_format($normal[$alt->id][$krit->id] ?? 0, 4) }} × {{ $krit->bobot }} = 
+                                        <span class="fw-bold">{{ number_format($weightedValue, 4) }}</span>
+                                    </td>
+                                @endforeach
+                                <td class="text-center fw-bold bg-light">
+                                    {{ number_format($totalVi, 4) }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Hasil Akhir -->
     <div class="card">
         <div class="card-header bg-info text-white">

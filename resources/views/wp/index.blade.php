@@ -89,10 +89,75 @@
             </div>
         </div>
 
+        <!-- Tabel Detail Perhitungan Vektor S -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Detail Perhitungan Vektor S (S = ∏(Xij^Wj'))</h5>
+            </div>
+            <div class="card-body p-0">
+                @foreach($alternatifs as $alt)
+                    <div class="mb-4">
+                        <h6 class="px-3 pt-3 mb-0 fw-bold">{{ $alt->kode_alternatif }} - {{ $alt->nama_alternatif }}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Kriteria</th>
+                                        <th class="text-center">Nilai (Xij)</th>
+                                        <th class="text-center">Bobot (Wj')</th>
+                                        <th class="text-center">Perhitungan (Xij^Wj')</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $perkalian = 1;
+                                    @endphp
+                                    @foreach($kriterias as $krit)
+                                        @php
+                                            $xij = $matrix[$alt->id][$krit->id] ?? 0;
+                                            $xij = $xij == 0 ? 0.01 : $xij; // Hindari error log(0)
+                                            $wj = $bobotTernormalisasi[$krit->id];
+                                            
+                                            if ($krit->sifat == 'benefit') {
+                                                $hitung = pow($xij, $wj);
+                                            } else {
+                                                $hitung = pow($xij, -$wj);
+                                            }
+                                            $perkalian *= $hitung;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $krit->kode_kriteria }} ({{ $krit->sifat }})</td>
+                                            <td class="text-center">{{ $xij == 0.01 ? '0' : $xij }}</td>
+                                            <td class="text-center">{{ number_format($wj, 4) }}</td>
+                                            <td class="text-center">
+                                                @if($krit->sifat == 'benefit')
+                                                    {{ $xij }}<sup>{{ number_format($wj, 4) }}</sup>
+                                                @else
+                                                    {{ $xij }}<sup>-{{ number_format($wj, 4) }}</sup>
+                                                @endif
+                                                = {{ number_format($hitung, 6) }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    <tr class="table-secondary fw-bold">
+                                        <td colspan="3" class="text-end">Hasil Perkalian (S):</td>
+                                        <td class="text-center">{{ number_format($perkalian, 6) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    @if(!$loop->last)
+                        <hr class="my-0">
+                    @endif
+                @endforeach
+            </div>
+        </div>
+
         <!-- Tabel Vektor S -->
         <div class="card mb-4">
             <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">Vektor S (Perkalian)</h5>
+                <h5 class="mb-0">Vektor S dan V (Hasil Akhir)</h5>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">

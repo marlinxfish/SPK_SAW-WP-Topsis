@@ -36,6 +36,7 @@ Route::delete('/alternatif/delete/{id}', [AlternatifController::class, 'destroy'
 Route::get('/penilaian', [PenilaianController::class, 'index'])->name('penilaian.index');
 Route::post('/penilaian/store', [PenilaianController::class, 'store'])->name('penilaian.store');
 Route::get('/penilaian/get-nilai/{alternatifId}/{kriteriaId}', [PenilaianController::class, 'getNilai'])->name('penilaian.get');
+Route::get('/penilaian/check-completeness', [PenilaianController::class, 'checkCompleteness'])->name('penilaian.check-completeness');
 
 // Route SAW
 Route::get('/saw', [SAWController::class, 'index'])->name('saw.index');

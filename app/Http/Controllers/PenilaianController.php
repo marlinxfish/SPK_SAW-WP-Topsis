@@ -120,4 +120,28 @@ class PenilaianController extends Controller
             'nilai' => $nilai ? $nilai->nilai : null
         ]);
     }
+    
+    /**
+     * Memeriksa kelengkapan data penilaian
+     */
+    public function checkCompleteness()
+    {
+        $totalAlternatif = Alternatif::count();
+        $totalKriteria = Kriteria::count();
+        $totalNilai = NilaiMatrix::count();
+        
+        // Hitung jumlah nilai yang seharusnya ada (setiap alternatif harus memiliki nilai untuk setiap kriteria)
+        $expectedTotalNilai = $totalAlternatif * $totalKriteria;
+        
+        // Periksa apakah semua data sudah lengkap
+        $isComplete = ($totalAlternatif > 0) && ($totalKriteria > 0) && ($totalNilai >= $expectedTotalNilai);
+        
+        return response()->json([
+            'complete' => $isComplete,
+            'total_alternatif' => $totalAlternatif,
+            'total_kriteria' => $totalKriteria,
+            'total_nilai' => $totalNilai,
+            'expected_total_nilai' => $expectedTotalNilai
+        ]);
+    }
 }
